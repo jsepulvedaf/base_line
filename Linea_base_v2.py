@@ -367,7 +367,8 @@ def main():
         # df_final.to_excel(writer, sheet_name="data", index=True)
         # writer.save()
         # writer.close()
-        archivo='archivo_plantilla resultados.xlsx'
+        desktop = os.path.normpath(os.path.expanduser("~/Desktop"))     
+        archivo=desktop+'\\archivo_plantilla resultados.xlsx'
         wb =load_workbook(filename =archivo )   
         ws = wb['Calculo QMN']
        
