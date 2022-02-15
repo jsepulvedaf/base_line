@@ -45,7 +45,7 @@ from openpyxl.writer.excel import ExcelWriter
 
 
 
-
+rad=st.sidebar.radio('Tipo Linea Base', ['Reparacion Fugas', 'Gestion presion'])
 
 
 def main():
@@ -80,7 +80,7 @@ def main():
         datos['new_date'] = [d.date() for d in datos['fecha']]
         html_temp1=""" <div style= background-color:#edb06b;padding: 10 px><h4> DATOS INICIALES </h4> </div>"""
         st.markdown(html_temp1,unsafe_allow_html=True)    
-        my_expander = st.beta_expander("")
+        my_expander = st.expander("")
         with my_expander:
         
         
@@ -90,7 +90,7 @@ def main():
             
                      
             
-            c1, c2,c3 = st.beta_columns((4,4,4))
+            c1, c2,c3 = st.columns((4,4,4))
                  
             
            
@@ -117,13 +117,13 @@ def main():
                 n1=st.text_input("entre el N1:")
                 n1_favad=float(n1)
         
-        nombre_columna = datos.columns.tolist()    
-        seleccion=st.multiselect("seleeciones los de presion a usar", nombre_columna)
-        selected = datos[seleccion]
-        selected['P_media']=selected.mean(axis=1)
-        Analisis_p = pd.concat([datos['fecha'], selected], axis=1)
-        
-        
+            nombre_columna = datos.columns.tolist()    
+            seleccion=st.multiselect("Seleeciones las presiones ", nombre_columna)
+            selected = datos[seleccion]
+            # st.dataframe(selected)
+            selected['P_media']=selected.mean(axis=1)
+            Analisis_p = pd.concat([datos['fecha'], selected], axis=1)
+            datos['P_media']=Analisis_p['P_media']
         
         ########Leer los datos del archivo  _csv#########
         
@@ -140,7 +140,7 @@ def main():
         
         Analisis_p['fecha'] = pd.to_datetime(datos['fecha'])
         Analisis_p['new_date'] = pd.to_datetime(datos['new_date'])
-        datos =pd.concat([datos['Caudal'],Analisis_p[:]],axis=1, join="inner") 
+        # datos =pd.concat([datos,Analisis_p[:]],axis=1, join="inner") 
         # st.dataframe(datos)
         maximo= max(datos['new_date'])
         minimo = min(datos['new_date'])
@@ -162,7 +162,7 @@ def main():
         datos['hora'] = datos.index.hour                       
         datos['minuto']=datos.index.minute
         #print (datos.head(100))
-        # st.dataframe(datos)
+        st.dataframe(datos)
         
         hora = str(maximo)
         hora.split()
@@ -171,7 +171,10 @@ def main():
         # ############  Calcula Qmin promoedio de los 7 dias#############
         P_table=pd.pivot_table(datos,index=['fecha'],values=['Dia','hora','Caudal'])
        
-       
+        nom_col = datos.columns.tolist()    
+        selec_1=st.multiselect("Seleeciones las presiones ", nom_col)
+        selected1 = datos[selec_1]            
+        
         
         # ########### Calcula Q y P medios diarios ##########################
         
@@ -193,7 +196,7 @@ def main():
         fecha_7.set_index('Dia',inplace=True)
         # st.dataframe(filtro_fin)
 
-# ###########  filtra dataframe en las horas de 2 a 3 am #####################
+# ###########  filtra dataframe en las horas de 2 a 4 am #####################
         filter_hr=  (datos['hora'] >= 2) & (datos['hora']<4) 
 
 
@@ -256,9 +259,10 @@ def main():
        
         html_temp3=""" <div style= background-color:#abdbe3;padding: 10px><h4> GRAFICOS </h4> </div>"""
         st.markdown(html_temp3,unsafe_allow_html=True)    
-        my_expander1 = st.beta_expander("")
+        my_expander1 = st.expander("")
         with my_expander1:
-        
+            
+           
         
             H1=("Comportamiento QMN - (lps) / Sector: "+ sector)
             fig = px.line(datos['Caudal'], title = H1 )  
@@ -271,7 +275,7 @@ def main():
             st.plotly_chart(fig, use_container_width=True)
     
             H2=("Comportamiento Presiones - (m.c.a) / Sector: "+ sector)
-            fig2 = px.line(selected, title = H2 )  
+            fig2 = px.line(selected1, title = H2 )  
             #fig.show()
             st.plotly_chart(fig2, use_container_width=True)
             # fig.write_html("presiones cali.html")
@@ -289,9 +293,9 @@ def main():
         #st.header("Resultados")    
         html_temp=""" <div style= background-color:#c9ffcb;padding: 10px;  P {color:WHITE;}><h4> RESULTADOS </h4> </div>"""
         st.markdown(html_temp,unsafe_allow_html=True)             
-        my_expander2 = st.beta_expander("")
+        my_expander2 = st.expander("")
         with my_expander2:
-            c4, c5,c6,c7 = st.beta_columns((1,1,1,1))
+            c4, c5,c6 = st.columns((1,1,1))
         
             with c4:
                 #st.markdown("""<style>.big-font {font-size:18px !important;}</style>""", unsafe_allow_html=True)
@@ -334,31 +338,51 @@ def main():
                 st.write("UARL")
                 st.info(UARL)
                 
-                              
-                DNL=Q_sector_min-qnls-grand_c-ubl*6
-                ILI=round(DNL/UARL,2)
+                # Q_sector_min-qnls-grand_c-ubl*6
+                           
+                DNL=Q_sector_min-qnls-grand_c-ubl*6  #q FUGAS DECTECTABLES RECUPERABLES POR fUGAS 
+                CARL=Q_sector_min-qnls-grand_c
+                ILI=round((CARL)/UARL,2)
                 st.write("ILI")
                 st.info(ILI)
                 
-            with c7:      
-               
-                st.write("Q Noct. Detectable-lps")
-                st.success(round(DNL,2))
+        
+                
+                PERD_FIS=Q_sector_min-qnls-grand_c
+                
+                               
+                DNLP=Q_sector_min-qnls-grand_c  #Q GUFAS RECUPERABLES POR PRESION
+                
+        html_temp=""" <div style= background-color:#c9ffcb;padding: 10px;  P {color:WHITE;}><h4> CAUDALES </h4> </div>"""
+        st.markdown(html_temp,unsafe_allow_html=True)             
+        my_expander3 = st.expander("")
+        with my_expander3: 
             
+            c7, c8 = st.columns((1,1))
+            
+            with c7:
                 st.write("Q MNF-lps")
                 st.success(Q_sector_min)
                 
-                
-                
+                st.write("Q Noct. Detectable-lps")
+                st.success(round(DNL,2))
+            
+                st.write("QF Rec Gestion P")
+                st.success(round(DNLP,2))
+                        
+            with c8:      
+                PL24hf=round((DNL)*hdf,2)
+                st.write("Q fisicas 24 hr-lps_fugas")
+                st.success(PL24hf)
                 
               
-                PL24h=round((DNL+UARL)*hdf,2)
-                st.write("Q fisicas 24 hr-lps")
-                st.success(PL24h)
+                PL24hp=round((DNLP)*hdf,2)
+                st.write("Q fisicas 24 hr-lps_presion")
+                st.success(PL24hp)
                
               
-        Dir_res= {'Qmn':Q_sector_min,'Consumo noct. normal':qnls,'Grandes Consumos Noc': grand_c, 'nivel Economico de Perdidas':ubl*6,
-          'fugas detectables': DNL, 'perdida fisica 24h': PL24h}
+        Dir_res= {'Qmn':Q_sector_min,'Consumo noct. normal':qnls,'Gr Consumos Noc': grand_c, 'ELL':ubl*6,
+          'fugas detectables_fugas': DNL, 'Qfugas recuperable_presion': DNLP,'perdida fisica 24h_f': PL24hf,'perdida fisica 24h_p': PL24hp}
 
         Resumen = pd.DataFrame(data=Dir_res,index=(0,1))
         
@@ -367,71 +391,156 @@ def main():
         # df_final.to_excel(writer, sheet_name="data", index=True)
         # writer.save()
         # writer.close()
-        desktop = os.path.normpath(os.path.expanduser("~/Desktop"))     
-        archivo=desktop+'\\archivo_plantilla resultados.xlsx'
-        wb =load_workbook(filename =archivo )   
-        ws = wb['Calculo QMN']
-       
-          
-  
-
-        ws['E5']= sector
-        ws['N4']= minimo
-        ws['Q4']= maximo        
-        ws['E9'] = km
-        ws['M9'] = user
-        ws['G15'] = p_dia_med
-        ws['Q15'] = P_sector_min
-        ws['D17'] = n1_favad
-        ws['G17'] = Q_sector_min
-        ws['L17'] = ILI
-        
-        
-        ws['O17'] = UARL
-        ws['G20'] = qnls+grand_c
-        ws['G22'] = Q_sector_min-(qnls+grand_c)
-        ws['S19'] = grand_c
-        ws['S20'] = qnls
-        ws['S23'] = ubl
-        ws['R27'] = PL24h
-        ws['S17'] = hdf
-        
-       
-      
-        # ruta=os.path.expanduser("~")       
-        now = datetime.now()
-        timestamp = datetime.timestamp(now)
-       
-        hora = str(datetime.fromtimestamp(timestamp))
-        hora.split()
-        hora_str= str(hora[11:13])+"-"+str(hora[14:16])+"-"+str(hora[17:19])
-       
-
-        ws4 = wb["Presiones"]
-        for r in dataframe_to_rows(Presiones_DN, index=True,header=True):
-             ws4.append(r)
-        #wb.create_sheet('Data6')
-        ws1 = wb["Data6"]
-        for r in dataframe_to_rows(Resumen_tot, index=True,header=True):
-             ws1.append(r)
-        
-        # wb.create_sheet('resumen')
-        ws2 = wb["resumen"]
-        for r in dataframe_to_rows(Resumen, index=True,header=True):
-             ws2.append(r)
-
-
-# ws5=
-
-
-        desktop = os.path.normpath(os.path.expanduser("~/Desktop"))           
-        file= desktop+"\\"+"Evaluacion_QMN_"+sector+"_"+"_"+hora_str+".xlsx" 
-        wb.save(file)
-       
-        
-        
-
+        if rad=='Reparacion Fugas':
+            #desktop = os.path.normpath(os.path.expanduser("~/Desktop"))     
+            archivo='archivo_plantilla resultados_f.xlsx'
+            wb =load_workbook(filename =archivo )   
+            ws = wb['Calculo QMN']
+           
               
+      
+    
+            ws['E5']= sector
+            ws['N4']= minimo
+            ws['Q4']= maximo        
+            ws['E9'] = km
+            ws['M9'] = user
+            ws['G15'] = p_dia_med
+            ws['Q15'] = P_sector_min
+            ws['D17'] = n1_favad
+            ws['G17'] = Q_sector_min
+            ws['L17'] = ILI
+            
+            
+            ws['O17'] = UARL
+            ws['G20'] = qnls+grand_c
+            ws['G22'] = PERD_FIS
+            ws['S19'] = grand_c
+            ws['S20'] = qnls
+            ws['S23'] = ubl
+            ws['R27'] = PL24hf
+            ws['S17'] = hdf
+            
+                    # ruta=os.path.expanduser("~")       
+            now = datetime.now()
+            timestamp = datetime.timestamp(now)
+           
+            hora = str(datetime.fromtimestamp(timestamp))
+            hora.split()
+            hora_str= str(hora[11:13])+"-"+str(hora[14:16])+"-"+str(hora[17:19])
+           
+    
+            ws4 = wb["Presiones"]
+            for r in dataframe_to_rows(Presiones_DN, index=True,header=True):
+                 ws4.append(r)
+            #wb.create_sheet('Data6')
+            ws1 = wb["Data6"]
+            for r in dataframe_to_rows(Resumen_tot, index=True,header=True):
+                 ws1.append(r)
+            
+            # wb.create_sheet('resumen')
+            ws2 = wb["resumen"]
+            for r in dataframe_to_rows(Resumen, index=True,header=True):
+                 ws2.append(r)
+     
+        
+            wb.create_sheet("graph_p_q")
+            ws5 = wb["graph_p_q"]
+            for r in dataframe_to_rows(datos, index=True,header=True):
+                 ws5.append(r)
+        
+        
+       
+            boton=st.button("exportar XLSX")        
+                   
+           
+           
+    
+            desktop = os.path.normpath(os.path.expanduser("~/Desktop/Resultado"))           
+            file= desktop+"\\"+"Evaluacion_QMN_GF_"+sector+"_"+"_"+hora_str+".xlsx" 
+            if boton :
+                wb.save(file)
+                st.write("archivo guardado")
+            
+            
+           
+           
+            
+        if rad=='Gestion presion':
+                    #desktop = os.path.normpath(os.path.expanduser("~/Desktop"))     
+                    archivo='archivo_plantilla resultados_p.xlsx'
+                    wb =load_workbook(filename =archivo )   
+                    ws = wb['Calculo QMN']
+                   
+                      
+              
+            
+                    ws['E5']= sector
+                    ws['N4']= minimo
+                    ws['Q4']= maximo        
+                    ws['E9'] = km
+                    ws['M9'] = user
+                    ws['G15'] = p_dia_med
+                    ws['Q15'] = P_sector_min
+                    ws['D17'] = n1_favad
+                    ws['G17'] = Q_sector_min
+                    ws['L17'] = ILI
+                    
+                    
+                    ws['O17'] = UARL
+                    ws['G20'] = qnls+grand_c
+                    ws['G22'] = PERD_FIS
+                    ws['S19'] = grand_c
+                    ws['S20'] = qnls
+                    ws['S23'] = ubl
+                    ws['R27'] = PL24hp
+                    ws['S17'] = hdf
+                    
+                            # ruta=os.path.expanduser("~")       
+                    now = datetime.now()
+                    timestamp = datetime.timestamp(now)
+                   
+                    hora = str(datetime.fromtimestamp(timestamp))
+                    hora.split()
+                    hora_str= str(hora[11:13])+"-"+str(hora[14:16])+"-"+str(hora[17:19])
+                   
+            
+                    ws4 = wb["Presiones"]
+                    for r in dataframe_to_rows(Presiones_DN, index=True,header=True):
+                         ws4.append(r)
+                    #wb.create_sheet('Data6')
+                    ws1 = wb["Data6"]
+                    for r in dataframe_to_rows(Resumen_tot, index=True,header=True):
+                         ws1.append(r)
+                    
+                    # wb.create_sheet('resumen')
+                    ws2 = wb["resumen"]
+                    for r in dataframe_to_rows(Resumen, index=True,header=True):
+                         ws2.append(r)
+                         
+                         
+                    wb.create_sheet("graph_p_q")
+                    ws5 = wb["graph_p_q"]
+                    for r in dataframe_to_rows(datos, index=True,header=True):
+                           ws5.append(r)
+            
+                    boton=st.button("exportar XLSX")   
+            
+                    desktop = os.path.normpath(os.path.expanduser("~/Desktop/Resultado"))           
+                    file= desktop+"\\"+"Evaluacion_QMN_GP_"+sector+"_"+"_"+hora_str+".xlsx" 
+                    if boton :
+                       wb.save(file)
+                       st.write("archivo guardado")
+            
+                    
+                    
+                   
+                    
+                    
+                    
+                    
+                    
+                    
         
         
         
